@@ -13,6 +13,7 @@ router.get('/all', (req, res, next) => {
     });
 });
 
+//Session cookies
 const set_session_cookie = (session_str, res) => {
     res.cookie('session_str', session_str, {
         expire: Date.now() + 3600000,
@@ -22,6 +23,7 @@ const set_session_cookie = (session_str, res) => {
     });
 }
 
+//Session creation
 const set_session = (username, res, session_id) => {
     let session, session_str;
 
@@ -50,6 +52,7 @@ const set_session = (username, res, session_id) => {
     });
 };
 
+//Adding new users
 router.post('/new', (req, res, next) => {
     const { username, password } = req.body;
     const username_hash = hash(username);
@@ -85,6 +88,7 @@ router.post('/new', (req, res, next) => {
     )
 });
 
+//Login function
 router.post('/login', (req, res, next) => {
     const { username, password } = req.body;
 
@@ -120,8 +124,26 @@ router.get('/logout', (req, res, next) => {
             if (q_err) return next(q_err);
 
             res.clearCookie('session_str');
-
             res.json({ msg: 'Successful logout' });
+        }
+    )
+});
+
+//Authentication method
+router.get('/authenticated', (req, res, next) => {
+    const { username, id } = Session.parse(req.cookies.session_str);
+
+    pool.query(
+        'SELECT * FROM users WHERE username_hash = $1',
+        [hash(username)],
+        (q_err, q_res) => {
+            if (q_err) return next(q_err);
+            if (q_res.rows.length === 0) return next(new Error('Not a valid username'));
+        
+            res.json({ 
+                authenticated: Session.verify(req.cookies.session_str ) &&
+                    q_res.rows[0].session_id === id
+            });
         }
     )
 });
