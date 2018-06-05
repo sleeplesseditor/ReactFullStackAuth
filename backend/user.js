@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const pool = require('./db');
-const { hash } = require('./helper');
+const { hash, Session } = require('./helper');
 
 const router = new Router();
 
@@ -30,6 +30,16 @@ router.post('/new', (req, res, next) => {
                     [username_hash, hash(password)],
                     (q1_err, q1_res) => {
                         if (q1_err) return next(q1_err);
+                        
+                        const session = new Session(username);
+                        const session_str = session.toString();
+                        res.cookie('session_str', session_str, {
+                            expire: Date.now() + 3600000,
+                            httpOnly: true
+                            //Use with https for secure cookie
+                            // secure: true
+                        });
+
                         res.json({ msg: 'Successfully created user' });
                     }
                 )
