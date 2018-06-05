@@ -4,8 +4,8 @@ import { CONNECTION } from '../config';
 class Auth { 
     loggedIn = false;
 
-    signup = (username, password) => {
-        fetch(`${CONNECTION}/user/new`, {
+    authenticate = (username, password, type) => {
+        fetch(`${CONNECTION}/user/${type}`, {
             method: 'POST',
             credentials: 'include',
             headers: {'Content-Type': 'application/json' },
@@ -21,12 +21,36 @@ class Auth {
             });
     }
 
-    login = () => {
-        
+    signup = (username, password) => {
+        this.authenticate(username, password, 'new');
+    }
+
+    login = (username, password) => {
+        this.authenticate(username, password, 'login');
     }
 
     logout = () => {
-       
+        fetch(`${CONNECTION}/user/logout`, {
+            credentials: 'include'
+        }).then(response => response.json())
+            .then(() => {
+                this.loggedIn = false;
+                history.replace('/');
+            });
+    }
+
+    checkAuthentication = () => {
+        return new Promise((resolve, reject) => {
+            fetch(`${CONNECTION}/user/authenticated`, {
+                credentials: 'include'
+            }).then(response => response.json())
+                .then(json => {
+                    if (json.authenticated) {
+                        this.loggedIn = true;
+                    } 
+                    resolve();
+                });
+        });
     }
 };
 

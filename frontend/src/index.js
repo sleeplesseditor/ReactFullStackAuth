@@ -29,14 +29,17 @@ const AuthRoute = props => {
     );
 };
 
-render(
-    <Router history={history}>
-        <Switch>
-            <Route exact path='/' render={() => <App auth={auth}/>} />
-            <Route path='/callback' render={props => callbackComponent(props)} />
-            <AuthRoute path='/ramen' Component={Ramen}/>
-            <AuthRoute path='/sushi' Component={Sushi}/>
-        </Switch>
-    </Router>,
-    document.getElementById('root')
-);
+auth.checkAuthentication()
+    .then(() => {
+        render(
+            <Router history={history}>
+                <Switch>
+                    <Route exact path='/' render={() => <App auth={auth}/>} />
+                    <Route path='/callback' render={props => callbackComponent(props)} />
+                    <AuthRoute path='/ramen' Component={Ramen}/>
+                    <AuthRoute path='/sushi' Component={Sushi}/>
+                </Switch>
+            </Router>,
+            document.getElementById('root')
+        );
+    });

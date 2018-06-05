@@ -9,3 +9,8 @@ img {
     height: 300px;
     object-fit: cover;
 }
+
+.entryform {
+    margin-left: 20px;
+    margin-right: 20px;
+}

@@ -17,14 +17,15 @@ class AuthForm extends Component {
     }
 
     login = () => {
-        console.log('this.state', this.state);
+        const { username, password } = this.state;
+        this.props.auth.login(username, password);
     }
 
     render() {
         return (
             <div>
                 <h2>Foodie Hub</h2>
-                <FormGroup>
+                <FormGroup className="entryform">
                     <FormControl 
                         type='text'
                         value={this.state.username}
