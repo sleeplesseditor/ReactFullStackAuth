@@ -12,7 +12,8 @@ class AuthForm extends Component {
     }
 
     signup = () => {
-        console.log('this.state', this.state);
+        const { username, password } = this.state;
+        this.props.auth.signup(username, password);
     }
 
     login = () => {

@@ -8,9 +8,9 @@ import { App, Ramen, Sushi } from './components';
 
 const auth = new Auth();
 
-const callbackComponent = props => {
-    if (props.location.hash.includes('access_token')) {
-        setTimeout(() => auth.handleAuthentication());
+const callbackComponent = () => {
+    if (auth.loggedIn) {
+        setTimeout(() => history.replace('/'), 1500);
         return <h4>Loading...</h4>;
     } else {
         return <Redirect to={{ pathname: '/' }} />

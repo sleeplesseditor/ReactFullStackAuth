@@ -25264,7 +25264,16 @@ exports.StaticRouter = _StaticRouter3.default;
 exports.Switch = _Switch3.default;
 exports.matchPath = _matchPath3.default;
 exports.withRouter = _withRouter3.default;
-},{"./BrowserRouter":16,"./HashRouter":17,"./Link":18,"./MemoryRouter":19,"./NavLink":20,"./Prompt":21,"./Redirect":22,"./Route":23,"./Router":24,"./StaticRouter":25,"./Switch":26,"./matchPath":27,"./withRouter":28}],6:[function(require,module,exports) {
+},{"./BrowserRouter":16,"./HashRouter":17,"./Link":18,"./MemoryRouter":19,"./NavLink":20,"./Prompt":21,"./Redirect":22,"./Route":23,"./Router":24,"./StaticRouter":25,"./Switch":26,"./matchPath":27,"./withRouter":28}],357:[function(require,module,exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var domain = 'localhost';
+var port = 3000;
+var CONNECTION = exports.CONNECTION = 'http://' + domain + ':' + port;
+},{}],6:[function(require,module,exports) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -25275,16 +25284,36 @@ var _history = require('./history');
 
 var _history2 = _interopRequireDefault(_history);
 
+var _config = require('../config');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Auth = function Auth() {
+    var _this = this;
+
     _classCallCheck(this, Auth);
 
     this.loggedIn = false;
 
-    this.signup = function () {};
+    this.signup = function (username, password) {
+        fetch(_config.CONNECTION + '/user/new', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+        }).then(function (response) {
+            return response.json();
+        }).then(function (json) {
+            if (json.type === 'error') {
+                alert(json.msg);
+            } else {
+                _this.loggedIn = true;
+                _history2.default.replace('/callback');
+            }
+        });
+    };
 
     this.login = function () {};
 
@@ -25294,7 +25323,7 @@ var Auth = function Auth() {
 ;
 
 exports.default = Auth;
-},{"./history":5}],280:[function(require,module,exports) {
+},{"./history":5,"../config":357}],280:[function(require,module,exports) {
 
 // https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
 var global = module.exports = typeof window != 'undefined' && window.Math == Math
@@ -45169,7 +45198,11 @@ var AuthForm = function (_Component) {
                 _this.setState(_defineProperty({}, type, event.target.value));
             };
         }, _this.signup = function () {
-            console.log('this.state', _this.state);
+            var _this$state = _this.state,
+                username = _this$state.username,
+                password = _this$state.password;
+
+            _this.props.auth.signup(username, password);
         }, _this.login = function () {
             console.log('this.state', _this.state);
         }, _temp), _possibleConstructorReturn(_this, _ret);
@@ -45440,11 +45473,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var auth = new _Auth2.default();
 
-var callbackComponent = function callbackComponent(props) {
-    if (props.location.hash.includes('access_token')) {
+var callbackComponent = function callbackComponent() {
+    if (auth.loggedIn) {
         setTimeout(function () {
-            return auth.handleAuthentication();
-        });
+            return _history2.default.replace('/');
+        }, 1500);
         return _react2.default.createElement(
             'h4',
             null,

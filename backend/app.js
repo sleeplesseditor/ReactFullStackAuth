@@ -1,12 +1,18 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 const user = require('./user');
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(cookieParser());
+//Same origin policy effort
+app.use(cors({
+    origin: 'http://localhost:1234',
+    credentials: true
+}));
 app.use('/user', user);
 
 //Error handling
