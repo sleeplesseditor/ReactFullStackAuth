@@ -21,7 +21,7 @@ const AuthRoute = props => {
     const { Component, path } = props;
     return (
         <Route path={path} render={() => 
-            auth.isAuthenticated() ?
+            auth.loggedIn ?
                 <Component /> :
                 <Redirect to={{ pathname: '/' }} />        
             } 
