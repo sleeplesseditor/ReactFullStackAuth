@@ -13,27 +13,41 @@ router.get('/all', (req, res, next) => {
     });
 });
 
-const set_session = (username, res) => {
-    const session = new Session(username);
-    const session_str = session.toString();
+const set_session_cookie = (session_str, res) => {
+    res.cookie('session_str', session_str, {
+        expire: Date.now() + 3600000,
+        httpOnly: true
+        //Use with https for secure cookie
+        // secure: true
+    });
+}
+
+const set_session = (username, res, session_id) => {
+    let session, session_str;
+
+    if (session_id) {
+        session_str = Session.dataToString(username, session_id);
+    } else {
+        session = new Session(username);
+        session_str = session.toString();
+    }
     
-
-    return new Promise((resolve, reject) => pool.query(
-        'UPDATE users SET session_id = $1 WHERE username_hash = $2',
-        [session.id, hash(username)],
-        (q_err, q_res) => {
-            if (q_err) return reject(q_err);
-        
-            res.cookie('session_str', session_str, {
-                expire: Date.now() + 3600000,
-                httpOnly: true
-                //Use with https for secure cookie
-                // secure: true
-            });
-
+    return new Promise((resolve, reject) => {
+        if (session_id) {
+            set_session_cookie(session_str, res);
             resolve();
+        } else {
+            pool.query(
+                'UPDATE users SET session_id = $1 WHERE username_hash = $2',
+                [session.id, hash(username)],
+                (q_err, q_res) => {
+                    if (q_err) return reject(q_err);
+                    set_session_cookie(session_str, res);
+                    resolve();
+                }
+            );
         }
-    ));
+    });
 };
 
 router.post('/new', (req, res, next) => {
@@ -83,7 +97,7 @@ router.post('/login', (req, res, next) => {
             const user = q_res.rows[0];
 
             if (user && user.password_hash === hash(password)) {
-                set_session(username, res)
+                set_session(username, res, user.session_id)
                     .then(() => {
                         res.json({ msg: 'Successful login!' });
                     })
@@ -93,6 +107,23 @@ router.post('/login', (req, res, next) => {
             }
         } 
     );
+});
+
+//Logout function
+router.get('/logout', (req, res, next) => {
+    const { username, id } = Session.parse(req.cookies.session_str);
+
+    pool.query(
+        'UPDATE users SET session_id = NULL WHERE username_hash = $1',
+        [hash(username)],
+        (q_err, q_res) => {
+            if (q_err) return next(q_err);
+
+            res.clearCookie('session_str');
+
+            res.json({ msg: 'Successful logout' });
+        }
+    )
 });
 
 module.exports = router;
