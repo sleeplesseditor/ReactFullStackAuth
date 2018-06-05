@@ -1,10 +1,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const SHA256 = require('crypto-js/sha256');
 const pool = require('./db');
+const { APP_SECRET } = require('./secrets');
 
 const app = express();
 
 app.use(bodyParser.json());
+
+const hash = str => {
+    return SHA256(`${APP_SECRET}${str}${APP_SECRET}`).toString();
+};
 
 //Get details from database file
 app.get('/user/all', (req, res, next) => {
@@ -16,7 +22,33 @@ app.get('/user/all', (req, res, next) => {
 });
 
 app.post('/user/new', (req, res, next) => {
-    console.log('req.body', req.body);
+    const { username, password } = req.body;
+    const username_hash = hash(username);
+
+    pool.query(
+        'SELECT * FROM users WHERE username_hash = $1', 
+        [username_hash],
+        (q0_err, q0_res) => {
+            if (q0_err) return next(q0_err);
+
+            if (q0_res.rows.length === 0) {
+                //Insert new user
+                pool.query(
+                    'INSERT INTO users(username_hash, password_hash) VALUES($1, $2)',
+                    [username_hash, hash(password)],
+                    (q1_err, q1_res) => {
+                        if (q1_err) return next(q1_err);
+                        res.json({ msg: 'Successfully created user' });
+                    }
+                )
+            } else {
+                res.status(409).json({ 
+                    type: 'error',
+                    msg: 'This username has been taken'
+                });
+            }
+        }
+    )
 });
 
 //Error handling
