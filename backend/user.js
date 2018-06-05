@@ -13,6 +13,29 @@ router.get('/all', (req, res, next) => {
     });
 });
 
+const set_session = (username, res) => {
+    const session = new Session(username);
+    const session_str = session.toString();
+    
+
+    return new Promise((resolve, reject) => pool.query(
+        'UPDATE users SET session_id = $1 WHERE username_hash = $2',
+        [session.id, hash(username)],
+        (q_err, q_res) => {
+            if (q_err) return reject(q_err);
+        
+            res.cookie('session_str', session_str, {
+                expire: Date.now() + 3600000,
+                httpOnly: true
+                //Use with https for secure cookie
+                // secure: true
+            });
+
+            resolve();
+        }
+    ));
+};
+
 router.post('/new', (req, res, next) => {
     const { username, password } = req.body;
     const username_hash = hash(username);
@@ -31,16 +54,11 @@ router.post('/new', (req, res, next) => {
                     (q1_err, q1_res) => {
                         if (q1_err) return next(q1_err);
                         
-                        const session = new Session(username);
-                        const session_str = session.toString();
-                        res.cookie('session_str', session_str, {
-                            expire: Date.now() + 3600000,
-                            httpOnly: true
-                            //Use with https for secure cookie
-                            // secure: true
-                        });
-
-                        res.json({ msg: 'Successfully created user' });
+                        set_session(username, res)
+                            .then(() => {
+                                res.json({ msg: 'Successfully created user' });
+                            })
+                            .catch(error => next(error));
                     }
                 )
             } else {
@@ -51,6 +69,30 @@ router.post('/new', (req, res, next) => {
             }
         }
     )
+});
+
+router.post('/login', (req, res, next) => {
+    const { username, password } = req.body;
+
+    pool.query(
+        'SELECT * FROM users WHERE username_hash = $1',
+        [hash(username)],
+        (q_err, q_res) => {
+            if (q_err) return next(q_err);
+
+            const user = q_res.rows[0];
+
+            if (user && user.password_hash === hash(password)) {
+                set_session(username, res)
+                    .then(() => {
+                        res.json({ msg: 'Successful login!' });
+                    })
+                    .catch(error => next(error));
+            } else {
+                res.status(400).json({ type: 'error', msg: 'Incorrect username/password' });
+            }
+        } 
+    );
 });
 
 module.exports = router;
